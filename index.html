@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Controle ESP32 - LED</title>
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #1d3557, #457b9d);
+    color: #f1faee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  h1 {
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  #status {
+    font-size: 1.2em;
+    margin-bottom: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+  }
+
+  button {
+    font-size: 1em;
+    font-weight: 600;
+    padding: 12px 25px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.3s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+
+  #btn-on {
+    background-color: #06d6a0;
+    color: #1d3557;
+  }
+
+  #btn-off {
+    background-color: #e63946;
+    color: #fff;
+  }
+
+  footer {
+    position: absolute;
+    bottom: 10px;
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+</style>
+</head>
+<body>
+  <h1>💡 Controle do LED (ESP32)</h1>
+  <p id="status">Carregando status...</p>
+  <div>
+    <button id="btn-on">Ligar</button>
+    <button id="btn-off">Desligar</button>
+  </div>
+  <footer>Projeto ESP32 + Firebase | by Júlia Oliveira, Endrew Machado e Clara Hernandes</footer>
+
+  <script>
+    // Substitua pela sua url do Realtime Database (sem / no final)
+    const FIREBASE_DATABASE_URL = "https://esp32-led-50a52-default-rtdb.firebaseio.com";
+    const ledEndpoint = FIREBASE_DATABASE_URL + "/led.json";
+    const statusEl = document.getElementById('status');
+    const btnOn = document.getElementById('btn-on');
+    const btnOff = document.getElementById('btn-off');
+
+    async function lerStatus() {
+      try {
+        const res = await fetch(ledEndpoint);
+        const data = await res.json();
+        const s = data && data.status ? data.status : "UNKNOWN";
+        statusEl.textContent = "Status atual: " + s;
+        statusEl.style.background = s === "ON" ? "rgba(6, 214, 160, 0.3)" : "rgba(230, 57, 70, 0.3)";
+      } catch (e) {
+        statusEl.textContent = "Erro ao ler status: " + e;
+      }
+    }
+
+    async function setStatus(novoStatus) {
+      try {
+        await fetch(ledEndpoint, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: novoStatus })
+        });
+        await lerStatus();
+      } catch (e) {
+        statusEl.textContent = "Erro ao enviar comando: " + e;
+      }
+    }
+
+    btnOn.addEventListener('click', ()=> setStatus("ON"));
+    btnOff.addEventListener('click', ()=> setStatus("OFF"));
+
+    // Atualiza status a cada 3s
+    lerStatus();
+    setInterval(lerStatus, 3000);
+  </script>
+</body>
+</html>
